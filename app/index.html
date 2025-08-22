@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Terminal</title>
+    <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css" />
+    <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
+    <script src="node_modules/socket.io-client/dist/socket.io.min.js"></script>
+</head>
+
+<body style="margin: 0px;padding: 0px;">
+    <div style="background-color: black;margin: 15px;padding: 15px;">
+        <div id="terminal" style="overflow: auto;">
+        </div>
+    </div>
+    <div style="position: fixed;width: 100vw;height: 100vh;top: 0;left: 0;display: flex;align-items: center;justify-content: center;font-weight: bold;font-size: 19px;background-color: rgba(0, 0, 0, 0.4);color: white;"
+        id="connecting-indicator">
+        Connecting to server...
+    </div>
+
+    <script>
+        const getConnectingIndicator = () => document.getElementById('connecting-indicator');
+
+        getConnectingIndicator().onclick = e => {
+            console.log('stopping e:', e);
+            e.stopPropagation();
+        };
+
+        const terminalRef = new Terminal({
+            cols: 100,
+            rows: 30,
+            cursorBlink: true
+        });
+        terminalRef.open(document.getElementById('terminal'));
+
+        terminalRef.onData((arg1, arg2) => {
+            terminalSocket.emit('write_server_terminal', arg1);
+        });
+
+        const wsPrefix = location.protocol === 'https:' ? 'wss' : 'ws';
+
+        const terminalSocket = io(`${wsPrefix}://${origin.split('://')[1]}`, {
+            transports: ['websocket', 'polling', 'flashsocket'],
+            withCredentials: true
+        });
+
+        terminalSocket.on('mount_terminal', function (lines = '', acknowledge) {
+            acknowledge?.();
+            terminalRef.reset();
+            terminalRef.write(lines);
+            getConnectingIndicator().style.display = 'none';
+        });
+
+        terminalSocket.on('write_client_terminal', function (data, acknowledge) {
+            acknowledge?.();
+            console.log('write_client_terminal: ', data);
+            terminalRef.write(data);
+            getConnectingIndicator().style.display = 'none';
+        });
+
+        terminalSocket.on('disconnect', () => {
+            getConnectingIndicator().style.display = 'flex';
+            terminalRef.blur();
+        });
+
+        terminalSocket.on('connect', () => {
+            console.warn('reconnected');
+        });
+    </script>
+</body>
+
+</html>

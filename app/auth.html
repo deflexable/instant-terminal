@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal GUI Login</title>
+</head>
+
+<body>
+    <div
+        style="text-align: center;display: flex;flex-direction: column;justify-content: center;padding: 15px 0px;align-items: center;">
+        <h2>Terminal Backdoor Login</h2>
+        <small style="color: gray;">
+            Kindly provide your passcode to access this terminal instance
+        </small>
+        <input type="password" placeholder="Enter terminal passcode" id="passkey-input"
+            style="font-size: 16px; padding: 7px 10px; margin-top: 15px; width: 75vw; max-width: 400px;" />
+
+        <button style="padding: 10px 25px; cursor: pointer;margin-top: 20px;" id="submit-btn">
+            Login
+        </button>
+    </div>
+</body>
+
+<script>
+    let isLoading = false;
+    const submitBtn = document.getElementById('submit-btn');
+
+    submitBtn.onclick = async () => {
+        if (isLoading) return;
+        isLoading = true;
+        submitBtn.textContent = 'Logining..';
+        try {
+            const password = document.getElementById('passkey-input').value;
+            if (!password) throw 'passcode cannot be empty';
+
+            const response = await fetch(`${location.origin}/login`, {
+                headers: { 'content-type': 'application/json' },
+                method: 'POST',
+                body: JSON.stringify({ password })
+            });
+            if (response.status !== 200) throw (await response.text());
+            location.href = '/';
+            return;
+        } catch (error) {
+            submitBtn.textContent = 'Login';
+            alert(`Error: ${error}`);
+        }
+        isLoading = false;
+    };
+</script>
+
+</html>
