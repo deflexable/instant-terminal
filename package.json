@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deflexable/vm-terminal.git"
+    "url": "git+https://github.com/deflexable/instant-terminal.git"
   },
   "keywords": [
     "virtual",
@@ -25,9 +25,9 @@
   "author": "Anthony Onabanjo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/deflexable/vm-terminal/issues"
+    "url": "https://github.com/deflexable/instant-terminal/issues"
   },
-  "homepage": "https://github.com/deflexable/vm-terminal#readme",
+  "homepage": "https://github.com/deflexable/instant-terminal#readme",
   "dependencies": {
     "@xterm/xterm": "^5.5.0",
     "cors": "^2.8.5",

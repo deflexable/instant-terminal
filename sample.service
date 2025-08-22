@@ -3,8 +3,8 @@ Description=Remote Instant Terminal
 After=network.target
 
 [Service]
-WorkingDirectory=/home/username/vm-terminal
-ExecStart=/usr/bin/node /home/username/vm-terminal/index.js
+WorkingDirectory=/home/username/instant-terminal
+ExecStart=/usr/bin/node /home/username/instant-terminal/index.js
 Environment=TERMINAL_PASSCODE=1234
 Environment=PORT=xxxx
 Environment=HOST_NAME=xxxx
