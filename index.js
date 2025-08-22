@@ -3,7 +3,7 @@ import cors from 'cors';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { one_hour, one_mb, one_minute, one_year } from './values.js';
-import { BASE_URL, CORS_ORIGIN, PORT, TERMINAL_PASSCODE, useRequestIpAssigner } from './env.js';
+import { BASE_URL, CORS_ORIGIN, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequestIpAssigner } from './env.js';
 import { Server } from "socket.io";
 import { createServer } from 'http';
 import { spawn as EmulateTerminal } from 'node-pty';
@@ -95,7 +95,7 @@ const io = new Server(server, {
 });
 
 const makeTerminal = () =>
-    EmulateTerminal('/bin/zsh', [], {
+    EmulateTerminal(TERMINAL_SHELL, [], {
         name: 'xterm-256color',
         cols: 100,
         rows: 30,

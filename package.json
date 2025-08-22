@@ -1,5 +1,5 @@
 {
-  "name": "vm-terminal",
+  "name": "instant-terminal",
   "version": "1.0.0",
   "description": "Quickly install and spawn virtual terminal for your ubuntu server with auto spawn on every reboot",
   "main": "index.js",
