@@ -1,0 +1,16 @@
+[Unit]
+Description=Remote Instant Terminal
+After=network.target
+
+[Service]
+WorkingDirectory=/home/username/vm-terminal
+ExecStart=/usr/bin/node /home/username/vm-terminal/index.js
+Environment=TERMINAL_PASSCODE=1234
+Environment=PORT=xxxx
+Environment=HOST_NAME=xxxx
+Environment=NODE_ENV=production
+Restart=always
+User=username
+
+[Install]
+WantedBy=multi-user.target

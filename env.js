@@ -20,4 +20,11 @@ export const useRequestIpAssigner = (req, _, next) => {
     next();
 };
 
-export const CORS_ORIGIN = IS_DEV || new RegExp(`^https?:\/\/(?:[a-zA-Z0-9-]+\\.)*${HOST_NAME}\.${DOMAIN_SUFFIX}`);
+
+const escapeRegex = (t = '') => t.split('/').join('\\/').split('.').join('\\.');
+
+export const CORS_ORIGIN = IS_DEV || (
+    HOST_NAME.includes('.') ?
+        new RegExp(`^https?:\/\/${escapeRegex(HOST_NAME)}\.${escapeRegex(DOMAIN_SUFFIX)}`) :
+        new RegExp(`^https?:\/\/(?:[a-zA-Z0-9-]+\\.)*${escapeRegex(HOST_NAME)}\.${escapeRegex(DOMAIN_SUFFIX)}`)
+);

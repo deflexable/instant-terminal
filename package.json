@@ -1,6 +1,6 @@
 {
   "name": "instant-terminal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Quickly install and spawn virtual terminal for your ubuntu server with auto spawn on every reboot",
   "main": "index.js",
   "type": "module",

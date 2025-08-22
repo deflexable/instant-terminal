@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css" />
     <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
     <script src="node_modules/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="./terminal-env.js"></script>
 </head>
 
 <body style="margin: 0px;padding: 0px;">
@@ -24,13 +25,12 @@
         const getConnectingIndicator = () => document.getElementById('connecting-indicator');
 
         getConnectingIndicator().onclick = e => {
-            console.log('stopping e:', e);
             e.stopPropagation();
         };
 
         const terminalRef = new Terminal({
-            cols: 100,
-            rows: 30,
+            cols: globalThis.TERMINAL_COL,
+            rows: globalThis.TERMINAL_ROW,
             cursorBlink: true
         });
         terminalRef.open(document.getElementById('terminal'));

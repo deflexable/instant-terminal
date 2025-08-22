@@ -7,6 +7,7 @@ import { BASE_URL, CORS_ORIGIN, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequ
 import { Server } from "socket.io";
 import { createServer } from 'http';
 import { spawn as EmulateTerminal } from 'node-pty';
+import './app/terminal-env.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app_dir = join(__dirname, 'app');
@@ -97,8 +98,8 @@ const io = new Server(server, {
 const makeTerminal = () =>
     EmulateTerminal(TERMINAL_SHELL, [], {
         name: 'xterm-256color',
-        cols: 100,
-        rows: 30,
+        cols: globalThis.TERMINAL_COL,
+        rows: globalThis.TERMINAL_ROW,
         cwd: process.env.HOME,
         env: process.env
     });
