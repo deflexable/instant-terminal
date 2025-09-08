@@ -28,6 +28,11 @@ app.use((req, res, next) => {
         return;
     }
 
+    if (req.url === '/favicon.ico') {
+        res.sendFile(`${app_dir}${req.url}`);
+        return;
+    }
+
     if (req.url === '/auth') {
         res.sendFile(`${app_dir}/auth.html`);
         return;
