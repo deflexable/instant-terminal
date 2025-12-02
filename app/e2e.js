@@ -24,19 +24,24 @@ export function initE2E(nacl) {
 };
 
 function utf16ToUint8(str) {
-    const buffer = new ArrayBuffer(str.length * 2); // 2 bytes per char
-    const view = new Uint16Array(buffer);
-    for (let i = 0; i < str.length; i++) {
-        view[i] = str.charCodeAt(i);
+    const len = str.length;
+    const bytes = new Uint8Array(len * 2);
+    for (let i = 0; i < len; i++) {
+        const code = str.charCodeAt(i);
+        bytes[i * 2] = code & 0xff;         // low byte
+        bytes[i * 2 + 1] = code >> 8;       // high byte
     }
-    return new Uint8Array(buffer);
+    return bytes;
 }
 
 function uint8ToUtf16(bytes) {
-    const view = new Uint16Array(bytes.buffer);
+    const len = bytes.length / 2;
     let str = '';
-    for (let i = 0; i < view.length; i++) {
-        str += String.fromCharCode(view[i]);
+    for (let i = 0; i < len; i++) {
+        const low = bytes[i * 2];
+        const high = bytes[i * 2 + 1];
+        const code = (high << 8) | low;
+        str += String.fromCharCode(code);
     }
     return str;
 }
