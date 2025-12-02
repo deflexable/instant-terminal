@@ -1,7 +1,6 @@
 # instant-terminal
 Quickly install terminal for your ubuntu server with auto spawn on reboot
 
-
 # Troubleshooting
 If node-pty failed to build on linux system then install neccessary tools:
 ```sh

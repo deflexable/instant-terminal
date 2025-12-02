@@ -21,12 +21,22 @@
         Connecting to server...
     </div>
 
-    <script>
+    <script type="module">
         const getConnectingIndicator = () => document.getElementById('connecting-indicator');
 
         getConnectingIndicator().onclick = e => {
             e.stopPropagation();
         };
+        const isSecure = location.protocol === "https:" && window.isSecureContext;
+        if (!isSecure) {
+            await Promise.all([
+                import('/node_modules/tweetnacl-functional/nacl-fast.js'),
+                import('/e2e.js'),
+                import('/node_modules/base64-js/base64js.min.js')
+            ]);
+        }
+
+        const { pair, encrypt, decrypt } = isSecure ? {} : initE2E(nacl);
 
         const terminalRef = new Terminal({
             cols: globalThis.TERMINAL_COL,
@@ -35,28 +45,45 @@
         });
         terminalRef.open(document.getElementById('terminal'));
 
-        terminalRef.onData((arg1, arg2) => {
-            terminalSocket.emit('write_server_terminal', arg1);
+        globalThis.terminalRef = terminalRef;
+
+        terminalRef.onData(async (arg1, arg2) => {
+            const data = isSecure ? arg1 : encrypt(arg1, await serverPubKey);
+            terminalSocket.emit('write_server_terminal', data);
         });
 
         const wsPrefix = location.protocol === 'https:' ? 'wss' : 'ws';
 
-        const terminalSocket = io(`${wsPrefix}://${origin.split('://')[1]}`, {
-            transports: ['websocket', 'polling', 'flashsocket'],
-            withCredentials: true
+        let serverPubKeyCallback;
+        let serverPubKey = !isSecure && new Promise(resolve => {
+            serverPubKeyCallback = resolve;
         });
 
-        terminalSocket.on('mount_terminal', function (lines = '', acknowledge) {
+        const terminalSocket = io(`${wsPrefix}://${origin.split('://')[1]}`, {
+            transports: ['websocket', 'polling', 'flashsocket'],
+            withCredentials: true,
+            ...isSecure ? undefined : { auth: { pubKey: uint8ToBase64(pair.publicKey) } }
+        });
+
+        terminalSocket.on('e2e_exchange', function (pubKey) {
+            pubKey = base64ToUint8(pubKey);
+            serverPubKeyCallback(pubKey);
+            serverPubKey = Promise.resolve(pubKey);
+        });
+
+        terminalSocket.on('mount_terminal', async function (data, acknowledge) {
             acknowledge?.();
             terminalRef.reset();
+            const lines = isSecure ? data : decrypt(data, await serverPubKey);
             terminalRef.write(lines);
             getConnectingIndicator().style.display = 'none';
         });
 
-        terminalSocket.on('write_client_terminal', function (data, acknowledge) {
+        terminalSocket.on('write_client_terminal', async function (data, acknowledge) {
             acknowledge?.();
-            console.log('write_client_terminal: ', data);
-            terminalRef.write(data);
+            const lines = isSecure ? data : decrypt(data, await serverPubKey);
+            // console.log('write_client_terminal: ', data, ' line:', lines);
+            terminalRef.write(lines);
             getConnectingIndicator().style.display = 'none';
         });
 

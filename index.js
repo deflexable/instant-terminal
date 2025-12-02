@@ -3,11 +3,13 @@ import cors from 'cors';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { one_hour, one_mb, one_minute, one_year } from './values.js';
-import { BASE_URL, CORS_ORIGIN, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequestIpAssigner } from './env.js';
+import { BASE_URL, CORS_ORIGIN, ENABLE_CACHING, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequestIpAssigner } from './env.js';
 import { Server } from "socket.io";
 import { createServer } from 'http';
 import { spawn as EmulateTerminal } from 'node-pty';
 import './app/terminal-env.js';
+import { base64ToUint8, initE2E, uint8ToBase64 } from './app/e2e.js';
+import nacl from 'tweetnacl-functional';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app_dir = join(__dirname, 'app');
@@ -23,17 +25,17 @@ app.use(useRequestIpAssigner);
 
 // handle login here
 app.use((req, res, next) => {
-    if (req.url === '/robots.txt') {
+    if (req.path === '/robots.txt') {
         res.status(200).send(`User-agent: *\nDisallow: /`);
         return;
     }
 
-    if (req.url === '/favicon.ico') {
-        res.sendFile(`${app_dir}${req.url}`);
+    if (req.path === '/favicon.ico') {
+        res.sendFile(`${app_dir}${req.path}`);
         return;
     }
 
-    if (req.url === '/auth') {
+    if (req.path === '/auth') {
         res.sendFile(`${app_dir}/auth.html`);
         return;
     }
@@ -74,9 +76,9 @@ app.use((req, res, next) => {
     const { 'secure-key': secureKey } = extractCookies(req);
 
     if (secureKey !== TERMINAL_PASSCODE) {
-        if (req.url === '/') {
+        if (req.path === '/') {
             res.redirect('/auth');
-        } else res.status(500).send('Authorized Access');
+        } else res.status(500).send('Unauthorized Access');
         return;
     }
 
@@ -88,7 +90,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(app_dir, {
-    cacheControl: false,
+    immutable: true,
+    cacheControl: ENABLE_CACHING,
+    maxAge: '1y',
     extensions: ['html']
 }));
 
@@ -115,6 +119,9 @@ const makeTerminal = () =>
 let terminal;
 let residueLines = '';
 let terminalKillTimer;
+let terminalInstances = 0;
+
+const { encrypt, decrypt, pair } = initE2E(nacl);
 
 io.on('connection', async socket => {
     const { 'secure-key': secureKey } = extractCookies(socket.handshake);
@@ -124,9 +131,20 @@ io.on('connection', async socket => {
         socket.disconnect();
         return;
     }
+    let { pubKey } = socket.handshake.auth;
+    const isSecure = socket.handshake.secure;
+
+    if (pubKey) pubKey = base64ToUint8(pubKey);
+
+    if (!isSecure && !pubKey) {
+        console.error('e2e is required for insecure socket connection', socket.handshake);
+        socket.disconnect();
+        return;
+    }
 
     clearTimeout(terminalKillTimer);
 
+    ++terminalInstances;
     if (!terminal) {
         terminal = makeTerminal();
         terminal.onData(line => {
@@ -139,20 +157,24 @@ io.on('connection', async socket => {
         });
     }
 
-    if (residueLines) socket.emit('mount_terminal', residueLines);
+    if (pubKey) socket.emit('e2e_exchange', uint8ToBase64(pair.publicKey));
+    const initPromise = socket.emitWithAck('mount_terminal', pubKey ? encrypt(residueLines, pubKey) : residueLines);
 
-    const listener = terminal.onData(line => {
-        socket.emit('write_client_terminal', line);
+    const listener = terminal.onData(async line => {
+        if (initPromise) await initPromise;
+        socket.emit('write_client_terminal', pubKey ? encrypt(line, pubKey) : line);
     });
 
     socket.on('write_server_terminal', data => {
-        terminal.write(data);
+        terminal.write(pubKey ? decrypt(data, pubKey) : data);
     });
 
     socket.on('disconnect', () => {
-        terminalKillTimer = setTimeout(() => {
-            terminal.kill();
-        }, one_hour);
+        if (!--terminalInstances)
+            terminalKillTimer = setTimeout(() => {
+                terminal.kill();
+                terminal = undefined;
+            }, one_hour);
         listener.dispose();
     });
 });

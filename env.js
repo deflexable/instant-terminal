@@ -5,7 +5,8 @@ export const {
     HOST_NAME = 'localhost',
     DOMAIN_SUFFIX = 'com',
     NODE_ENV = 'development',
-    TERMINAL_SHELL = '/bin/bash'
+    TERMINAL_SHELL = '/bin/bash',
+    ENABLE_CACHING = false
 } = process.env;
 
 export const IS_DEV = NODE_ENV === 'development';
