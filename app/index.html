@@ -32,8 +32,7 @@
             console.warn('insecure protocol, enabling end to end encryption');
             await Promise.all([
                 import('/node_modules/tweetnacl-functional/nacl-fast.js'),
-                import('/e2e.js'),
-                import('/node_modules/base64-js/base64js.min.js')
+                import('/e2e.js')
             ]);
         }
 
