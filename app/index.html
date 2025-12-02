@@ -29,6 +29,7 @@
         };
         const isSecure = location.protocol === "https:" && window.isSecureContext;
         if (!isSecure) {
+            console.warn('insecure protocol, enabling end to end encryption');
             await Promise.all([
                 import('/node_modules/tweetnacl-functional/nacl-fast.js'),
                 import('/e2e.js'),
