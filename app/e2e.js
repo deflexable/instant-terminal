@@ -12,23 +12,33 @@ export function initE2E(nacl) {
         encrypt: (data, partyPubKey) => {
             const nonce = randomBytes(box.nonceLength);
             return {
-                ugly: uint8ToBase64(box(utf8ToUint8(data), nonce, partyPubKey, pair.secretKey)),
+                ugly: uint8ToBase64(box(utf16ToUint8(data), nonce, partyPubKey, pair.secretKey)),
                 nonce: uint8ToBase64(nonce)
             };
         },
         decrypt: (data, partyPubKey) => {
             const { ugly, nonce } = data;
-            return uint8ToUtf8(box.open(base64ToUint8(ugly), base64ToUint8(nonce), partyPubKey, pair.secretKey));
+            return uint8ToUtf16(box.open(base64ToUint8(ugly), base64ToUint8(nonce), partyPubKey, pair.secretKey));
         }
     };
 };
 
-function utf8ToUint8(str) {
-    return base64ToUint8(btoa(str));
+function utf16ToUint8(str) {
+    const buffer = new ArrayBuffer(str.length * 2); // 2 bytes per char
+    const view = new Uint16Array(buffer);
+    for (let i = 0; i < str.length; i++) {
+        view[i] = str.charCodeAt(i);
+    }
+    return new Uint8Array(buffer);
 }
 
-function uint8ToUtf8(base64) {
-    return atob(uint8ToBase64(base64));
+function uint8ToUtf16(bytes) {
+    const view = new Uint16Array(bytes.buffer);
+    let str = '';
+    for (let i = 0; i < view.length; i++) {
+        str += String.fromCharCode(view[i]);
+    }
+    return str;
 }
 
 export const uint8ToBase64 = (uint8) => {
