@@ -147,15 +147,15 @@ io.on('connection', async socket => {
         return;
     }
     let { pubKey } = socket.handshake.auth;
-    const isSecure = socket.handshake.secure;
+    // const isSecure = socket.handshake.secure;
 
     if (pubKey) pubKey = base64ToUint8(pubKey);
 
-    if (!isSecure && !pubKey) {
-        console.error('e2e is required for insecure socket connection', socket.handshake);
-        socket.disconnect();
-        return;
-    }
+    // if (!isSecure && !pubKey) {
+    //     console.error('e2e is required for insecure socket connection', socket.handshake);
+    //     socket.disconnect();
+    //     return;
+    // }
 
     clearTimeout(terminalKillTimer);
 
