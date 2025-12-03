@@ -16,6 +16,10 @@ const app_dir = join(__dirname, 'app');
 const LoginDDOS = {};
 const rateLimiter = { maxCalls: 3, millis: one_minute * 10 };
 
+const NO_CACHE_HEADER = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+};
+
 const app = express();
 app.disable("x-powered-by");
 
@@ -25,6 +29,8 @@ app.use(useRequestIpAssigner);
 
 // handle login here
 app.use((req, res, next) => {
+    const doNoCache = () => res.set(NO_CACHE_HEADER);
+
     if (req.path === '/robots.txt') {
         res.status(200).send(`User-agent: *\nDisallow: /`);
         return;
@@ -36,11 +42,13 @@ app.use((req, res, next) => {
     }
 
     if (req.path === '/auth') {
-        res.sendFile(`${app_dir}/auth.html`);
+        doNoCache();
+        res.sendFile(`${app_dir}/auth.html`, { cacheControl: false });
         return;
     }
 
     if (req.url === '/login') {
+        doNoCache();
         const ipAddress = req.cip;
 
         const destroyDDOS = () => {
@@ -76,9 +84,16 @@ app.use((req, res, next) => {
     const { 'secure-key': secureKey } = extractCookies(req);
 
     if (secureKey !== TERMINAL_PASSCODE) {
+        doNoCache();
         if (req.path === '/') {
             res.redirect('/auth');
         } else res.status(500).send('Unauthorized Access');
+        return;
+    }
+
+    if (req.path === '/') {
+        doNoCache();
+        res.sendFile(`${app_dir}/index.html`, { cacheControl: false });
         return;
     }
 
