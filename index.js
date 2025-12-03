@@ -84,7 +84,6 @@ app.use((req, res, next) => {
     const { 'secure-key': secureKey } = extractCookies(req);
 
     if (secureKey !== TERMINAL_PASSCODE) {
-        console.log('skipping TERMINAL_PASSCODE:', TERMINAL_PASSCODE, ' secureKey:', secureKey);
         doNoCache();
         if (req.path === '/') {
             res.redirect('/auth');
@@ -212,6 +211,7 @@ app.use((err, req, res, next) => {
 function extractCookies(req) {
     const { cookie } = req.headers;
     return Object.fromEntries(
-        (cookie || '').split('; ').map(c => c.split('='))
+        (cookie || '').split('; ')
+            .map(c => c.split('=').map(decodeURIComponent))
     );
 }
