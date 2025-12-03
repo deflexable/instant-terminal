@@ -3,7 +3,7 @@ import cors from 'cors';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { one_hour, one_mb, one_minute, one_year } from './values.js';
-import { BASE_URL, CORS_ORIGIN, ENABLE_CACHING, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequestIpAssigner } from './env.js';
+import { BASE_URL, CORS_ORIGIN, IS_DEV, PORT, TERMINAL_PASSCODE, TERMINAL_SHELL, useRequestIpAssigner } from './env.js';
 import { Server } from "socket.io";
 import { createServer } from 'http';
 import { spawn as EmulateTerminal } from 'node-pty';
@@ -91,7 +91,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(app_dir, {
     immutable: true,
-    cacheControl: ENABLE_CACHING,
+    cacheControl: !IS_DEV,
     maxAge: '1y',
     extensions: ['html']
 }));
