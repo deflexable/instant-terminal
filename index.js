@@ -15,6 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app_dir = join(__dirname, 'app');
 const LoginDDOS = {};
 const rateLimiter = { maxCalls: 3, millis: one_minute * 10 };
+const TerminalCleanupTimeout = one_hour * 6;
 
 const NO_CACHE_HEADER = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
@@ -138,7 +139,7 @@ let terminalInstances = 0;
 
 const { encrypt, decrypt, pair } = initE2E(nacl);
 
-io.on('connection', async socket => {
+io.on('connection', socket => {
     const { 'secure-key': secureKey } = extractCookies(socket.handshake);
 
     if (secureKey !== TERMINAL_PASSCODE) {
@@ -175,10 +176,11 @@ io.on('connection', async socket => {
     if (pubKey) socket.emit('e2e_exchange', uint8ToBase64(pair.publicKey));
     const initPromise = socket.emitWithAck('mount_terminal', pubKey ? encrypt(residueLines, pubKey) : residueLines);
 
-    const listener = terminal.onData(async line => {
-        if (initPromise) await initPromise;
-        socket.emit('write_client_terminal', pubKey ? encrypt(line, pubKey) : line);
-    });
+    const listener =
+        terminal.onData(async line => {
+            if (initPromise) await initPromise;
+            socket.emit('write_client_terminal', pubKey ? encrypt(line, pubKey) : line);
+        });
 
     socket.on('write_server_terminal', data => {
         terminal.write(pubKey ? decrypt(data, pubKey) : data);
@@ -186,10 +188,11 @@ io.on('connection', async socket => {
 
     socket.on('disconnect', () => {
         if (!--terminalInstances)
-            terminalKillTimer = setTimeout(() => {
-                terminal.kill();
-                terminal = undefined;
-            }, one_hour);
+            terminalKillTimer =
+                setTimeout(() => {
+                    terminal.kill();
+                    terminal = undefined;
+                }, TerminalCleanupTimeout);
         listener.dispose();
     });
 });
